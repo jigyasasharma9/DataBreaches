@@ -1,0 +1,237 @@
+---
+title: "Data Breaches, Human Error and Cybersecurity in the Public Sector"
+author: "Jigyasa"
+date: "4/7/2020"
+output: html_document
+---
+
+
+
+Most data breaches in the public and private sector can be attributed directly or indirectly to human error. Cyberattacks are often a result of attackers exploiting system vulnerabilities that arises due to lax data security practices or poor digital and cybersecurity hygiene. Data breaches exposed records of over 4 billion people in just the first six months of 2019. Post 2014, we have seen a massive increase in these breaches particularly in the Tech and Government sector. In the light of unprecedented increase in data breaches, this article uses data on world’s largest data breaches from 2004 and 2018 to focus attention on the role of human error in these breaches particularly in the government sector. Furthermore, the finding from the data are used to make a case for creating a robust security culture and calls for both preemptive and responsive approach to cybersecurity in the public sector.
+
+
+```{r, echo=FALSE, include=FALSE}
+#Downloading libraries I may (or may not) need
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(plotly)
+library(gganimate)
+library(ggthemes)
+library(reshape2)
+library(devtools)
+library(RCurl)
+library(httr)
+library(skimr)
+library(forcats)
+library(plotly)
+library(gifski)
+library(readxl)
+```
+
+```{r, echo=FALSE, include=FALSE}
+Midtermproject_data <- read_excel("~/Desktop/MPP/Spring 2020/D4PP/Midterm project/Midtermproject_data.xlsx")
+```
+
+
+```{r, echo=FALSE, include=FALSE}
+Midtermproject_data
+```
+
+
+```{r, echo=FALSE, include=FALSE}
+Midtermproject_data$datasen <- as.factor(Midtermproject_data$datasen)
+Midtermproject_data$stolenrecords <-as.numeric(Midtermproject_data$stolenrecords)
+#changing into factor and numeric respectively.
+
+```
+
+
+
+```{r, echo=FALSE, include=FALSE}
+databreaches<-Midtermproject_data %>% 
+  mutate(datatype = case_when(datasen == 1 ~ "Opensource", 
+                                datasen == 20 ~ "Personal",
+                                datasen == 300 ~ "Financial",
+                                datasen == 4000 ~ "Confidential",
+                                datasen == 3 ~ "Financial",
+                                datasen == 50000 ~ "Secret")) %>% #Categories data sensitivity into different types with Opensource                                                                   being least sensitive to Secret being most sensitive data
+  mutate(sector = case_when(orgtype == "tech" ~ "Tech", 
+                            orgtype == "web, gaming" ~ "Tech",
+                            orgtype == "gaming" ~ "Tech",
+                            orgtype == "media" ~ "Tech",
+                            orgtype == "tech, web" ~ "Tech",
+                            orgtype == "web, tech" ~ "Tech",
+                            orgtype == "app" ~ "Tech",
+                            orgtype == "web" ~ "Tech",
+                            orgtype == "tech, retail" ~ "Retail",
+                            orgtype == "retail" ~ "Retail",
+                            orgtype == "web, military" ~ "Government",
+                            orgtype == "government" ~ "Government",
+                            orgtype == "government, healthcare" ~      "Government", 
+                            orgtype == "government, military" ~ "Government",
+                            orgtype == "military" ~ "Government",
+                            orgtype == "military, healthcare" ~ "Government", 
+                            orgtype == "military" ~ "Government",
+                            orgtype == "financial" ~ "Financial",
+                            orgtype == "telecoms" ~ "Telecoms",
+                            orgtype == "energy" ~ "Energy",
+                            orgtype == "academic" ~ "Academic",
+                            orgtype == "healthcare" ~ "Healthcare",
+                            orgtype == "legal" ~ "Legal",
+                            orgtype == "transport" ~ "Transport",
+                            )) %>% #categories organisations into 10 sectors
+  mutate(leaktype = case_when(leakmethod == "inside job" ~ "Malicious Intent", 
+                            leakmethod == "hacked" ~ "Malicious Intent",
+                            leakmethod == "lost / stolen device or media" ~ "Human Error",
+                            leakmethod == "poor security" ~ "Human Error",
+                            leakmethod == "accidentally published" ~ "Human Error")) #categories methods of leak into two leak type
+
+```
+
+```{r, echo = FALSE, include = FALSE, comment= ""}
+head(databreaches)
+```
+
+
+
+
+
+```{r, echo = FALSE, include= FALSE}
+ls(databreaches)
+```
+
+```{r, echo=FALSE, include=FALSE}
+
+df1 <- databreaches %>% 
+  group_by(year, sector) %>% 
+  summarise(totalrecordsstolen = sum(stolenrecords)) %>% 
+  select(year, sector,totalrecordsstolen)
+
+df1
+#Setting up data frame for first figure
+```
+
+
+
+![](figz.gif)
+
+```{r, echo = FALSE, include = FALSE, eval= FALSE}
+fig1 <- df1 %>% 
+  ggplot(aes(x = year, y = totalrecordsstolen, color = sector))+geom_path() + 
+  geom_point() + scale_fill_manual(values = c("red", "green", "blue", "pink", "yellow", "orange", "tan", "orchid", "grey", "brown"))+
+  transition_reveal(id = year, along = year) + 
+  ease_aes("linear")+theme(legend.title = element_text(color = "black", size = 10, face = "bold" ),legend.position = "none")+theme_classic()+labs(x = "Year", y = "Records Stolen")+scale_x_discrete(name = "Year", limits = c(2004, 2006, 2008, 2010, 2012, 2014, 2016, 2018))
+
+animate(fig1, 200, 20, renderer = gifski_renderer("figz.gif"))
+```
+
+Of all the records stolen from 2004 to 2018, about 70 percent of it were stolen from the Tech sector, 20 percent from Government and around 7 percent from the Financial sector. Together, the three sectors accounted for around 97 percent of records stolen over the corresponding year. According to a report by Forrester, these sectors are often targeted by hackers not only because they hold enormous amounts of personal identifying information (PII) but also because they are less deligent in their consumer data protection practices. 
+
+
+```{r, echo=FALSE, include=FALSE}
+bysector <- databreaches %>% 
+  group_by(sector) %>% 
+  summarise(totalstolenrecords = sum(stolenrecords)) %>% 
+  select(sector,totalstolenrecords) #calculating total breaches over the years by sector
+
+sharepersector<- bysector %>%
+  mutate(total=sum(totalstolenrecords)) %>% 
+  mutate(percent_share = round(totalstolenrecords/total*100, 2)) %>% 
+  select(sector, totalstolenrecords, percent_share) #calculating percent share
+
+```
+
+```{r, echo=FALSE, include=FALSE}
+sharepersector
+```
+
+
+#### <small> **Tech, Government and Financial** accounted for around **97** percent of the data breaches from 2004 to 2018. </small>
+
+```{r, echo = FALSE, fig.margin=TRUE}
+fig2<- ggplot(sharepersector, aes(x= reorder(sector, percent_share), y=percent_share)) +
+    geom_segment( aes(xend=sector, yend=0)) +
+    geom_point(size=4.5, color="orange") +
+    coord_flip() +
+    theme_economist_white() + labs()+
+    xlab("")+ labs(y = "")+theme(plot.caption = element_text(hjust = 0))
+
+pfg2<- ggplotly(fig2)
+
+pfg2
+```
+
+
+```{r,echo=FALSE, include=FALSE}
+type_leak<- databreaches %>% 
+  group_by(year, sector, datatype, leaktype) %>% 
+  summarise(totalrecordsstolen = sum(stolenrecords)) %>% 
+  mutate(records_10000 = round(totalrecordsstolen/10000)) %>% 
+  select(year, sector, totalrecordsstolen, records_10000, datatype, leaktype )
+
+type_leak
+```
+
+ 
+
+
+```{r, echo=FALSE, fig.margin=TRUE, eval=FALSE}
+fig3<- type_leak %>% 
+  group_by(datatype, sector) %>% 
+  summarise(totalrecordsstolen = sum(totalrecordsstolen)) %>% 
+  ggplot(aes(x = sector, y = log(totalrecordsstolen)))+geom_bar( stat = "identity", aes(fill = datatype), width = 0.5)+theme_bw()+labs(y = "Data Stolen (in log)")+scale_fill_brewer(palette = "GnBu")+scale_x_discrete(name = "Sectors", limits = c("Legal","Energy","Transport", "Academic", "Telecoms", "Retail","Healthcare", "Financial", "Government", "Tech"))+theme(axis.text.x = element_text(angle = 90, hjust = 1), legend.text = element_text(colour="black", size=10, face="bold"), legend.background = element_rect(size=0.5, linetype="solid"), legend.title = element_blank())
+
+pfig3 <- ggplotly(fig3)
+
+pfig3
+
+#recoder not working for some reason
+```
+
+A look at the leak type - human error and malicious intent - of the breaches across different data categories suggest that roughly half of all data types were breached due to *human error*.* What’s more interesting, is leak types across sectors which shows that about 93 percent of data breaches within the government sector resulted from *human error.*
+
+
+
+```{r, echo = FALSE, fig.margin=TRUE}
+fig4<- type_leak %>% 
+  group_by(datatype, leaktype) %>% 
+  summarise(totalrecordsstolen = sum(totalrecordsstolen)) %>% 
+  ggplot(aes(x = datatype, y = log(totalrecordsstolen)))+geom_bar(color = "black", position = "fill", stat = "identity", aes(fill = leaktype), width = 0.6, alpha = 0.7)+theme_economist_white()+labs(y = "Percent of Data Stolen")+scale_fill_brewer(palette = "Set1")+scale_y_continuous(labels = scales::percent_format())+theme(legend.title = element_blank()) 
+
+pfig4 <- ggplotly(fig4)
+
+pfig4
+```
+
+
+
+```{r, echo = FALSE, fig.margin=TRUE, fig.align="center"}
+fig5<- type_leak %>% 
+  group_by(sector,leaktype) %>% 
+  summarise(totalrecordsstolen = sum(totalrecordsstolen)) %>% 
+  ggplot(aes(x =sector, y = totalrecordsstolen))+geom_bar(color = "black", position = "fill", stat = "identity", aes(fill = leaktype), width = 0.5, alpha = 0.7)+theme_economist_white()+labs(y = "Percent of Data Stolen")+scale_fill_brewer(palette = "Set1")+scale_y_continuous(labels = scales::percent_format())+theme(axis.text.x = element_text(angle = 90, hjust = 1), legend.title = element_blank())+scale_x_discrete( limits = c("Government","Academic","Transport", "Tech", "Telecoms", "Healthcare", "Retail","Financial", "Legal", "Energy"))
+
+pfig5 <- ggplotly(fig5)
+
+pfig5
+```
+
+Aadhar is a 12-digit identity number assigned to every Indian citizen which forms the largest biometric database of the country. In 2017 and 2018, Aadhar information of billions of Indians was (allegedly) "accidently" exposed online for days. An Indian newspaper later exposed an illicit data trade where Aadhar information was being sold for less than US$8 on the underground market.
+
+In the United States, database of 191 million voters across all 50 states was exposed online due to human error and oversight in 2015. In the same year, USA's Office of Personnel Management (OPM) suffered two major data breaches endangering national security and the lives of many federal employees in intelligence and other sensitive jobs. OPM's assistant inspector general of audits stated that the breaches were a result of agency's "long history of systemic failures to properly manage its IT infrastructure". 
+
+These inadvertent instances highlight the role of human error and systematic failure on part of the government to manage citizen data. One may argue that the dichotomy of human error and malicious intent is misleading and there will always be some level of human error involved - *to err is human*. While, it may be incorrect to perceive human error as the cause of the problem, it is certainly a symptom of a larger systematic and institutional failure within the public sector.  Earlier this year, Dr. Tracy Celaya Brown (President, Go Consulting International) and Ira Winkler (Lead Security Principal, Trustwave), delivered an intriguing talk at the RSA Conference titled [You Can Stop Stupid](https://www.youtube.com/watch?v=li8lsvEwGkE) . They talked at length about how a weak security infrastructure places the user in the position to initiate loss, and that robust system and processes are required to mitigate these losses. 
+
+Unlike private sector that has been investing billions of dollars in cybersecurity, governments particularly in developing countries, are not only resource constrained financially but also lack access to human capital. The question arises – *“What can governments do to ensure that public data is not compromised?”* 
+
+Governments must build a comprehensive cybersecurity governance framework to ensure security practices are viewed as a continuous process requiring both preemptive (proactive) as well as responsive (reactive) measures. Preemptive responses must include, but not limited to, creating awareness and training public personnel dealing with sensitive citizen data. There is a need to bring about a change in attitude of government officials towards cybersecurity and cultivate a *culture of cybersecurity* across government departments. Training and awareness programs for employees are low hanging fruits that the governments need to focus on. While awareness and cybersecurity trainings to public officials are likely to reduce the magnitude of human error involved in security lapses, it only cures (to some extent) a symptom of the larger problem at hand. There is a need to put robust system, processes and protocols in place to limit the possibility of major security violations initiated as a result of human failings. Governments must clearly outline resilience plans to be adopted in face of a security threat. Empowering government employees involves providing them the tools and channels to report incidents and move quickly to alert the security authorities of a potential breach. As the intensity and sophistication of attacks increases, responsiveness and timely action to stop or to mitigate the losses would be the key to maintaining data integrity. 
+
+Cybersecurity measures must be monitored continuously and at all levels. It is essential to adopt a top-down strategy as it would require commitment to data security measures at all levels of government. As the world moves towards a digital economy, and governments in developed and developing world alike digitize public records and services, there is an urgent need to bring cybersecurity governance to the forefront.
+
+
+
+
+Note:
+Data used is from the dataset on world's biggest data breaches and hacks sourced from [Information is Beautiful](https://www.informationisbeautiful.net/visualizations/worlds-biggest-data-breaches-hacks/). 
+
